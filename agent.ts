@@ -4,7 +4,8 @@ import {
   SolanaKeypairWalletProvider,
   splActionProvider,
   walletActionProvider,
-  jupiterActionProvider
+  jupiterActionProvider,
+  alloraActionProvider
 } from "@tokenomiapro/agentkit";
 import { getLangChainTools } from "@tokenomiapro/agentkit-langchain";
 import { HumanMessage } from "@langchain/core/messages";
@@ -67,7 +68,7 @@ async function initializeAgent() {
   try {
     // Initialize LLM
     const llm = new ChatOpenAI({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       temperature: 0 // make it less annoying
     });
 
@@ -99,7 +100,8 @@ async function initializeAgent() {
         walletActionProvider(), 
         dexpaprikaActionProvider(),
         splActionProvider(),
-        jupiterActionProvider()
+        jupiterActionProvider(),
+        alloraActionProvider()
       ]
     });
 
@@ -117,15 +119,14 @@ async function initializeAgent() {
       tools,
       checkpointSaver: memory,
       messageModifier: `
-        You are a helpful agent that can interact onchain on Solana using the Coinbase Developer Platform AgentKit. You are 
-        empowered to interact onchain using your tools. If you ever need funds, you can request them from the 
-        faucet if you are on network ID 'solana-devnet'. If not, you can provide your wallet details and request 
-        funds from the user. Before executing your first action, get the wallet details to see what network 
-        you're on. If there is a 5XX (internal) HTTP error code, ask the user to try again later. If someone 
-        asks you to do something you can't do with your currently available tools, you must say so, and 
-        encourage them to implement it themselves using the CDP SDK + Agentkit, recommend they go to 
-        docs.cdp.coinbase.com for more information. Be concise and helpful with your responses. Refrain from 
-        restating your tools' descriptions unless it is explicitly requested.
+        You are a blockchain-integrated autonomous AI agent running in an infinite loop. Your task is to analyze price predictions and market data, and prepare prompts for trades on Solana if profitable conditions are met.
+
+        On each loop iteration, follow these steps:
+        1. Fetch the 8h predicted price for SOL from the Allora Network.
+        2. Fetch the current average SOL price from Dexpaprika (DEX aggregator) using get_token_details methond on Solana network.
+        3. Compare the two:
+          - If predicted price > average market price, return prompt to swap exactly **1 USDC (token address: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v)** to **SOL** using Jupiter Aggregator on Solana.
+        DO NOT EXECUTE SWAP!
         `,
     });
 
@@ -144,15 +145,14 @@ async function initializeAgent() {
  * @param interval - Time interval between actions in seconds
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function runAutonomousMode(agent: any, config: any, interval = 10) {
+async function runAutonomousMode(agent: any, config: any, interval = 60) {
   console.log("Starting autonomous mode...");
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
       const thought =
-        "Be creative and do something interesting on the blockchain. " +
-        "Choose an action or set of actions and execute it that highlights your abilities.";
+        "Begin loop. Start by fetching 8h SOL price prediction from Allora and comparing it to the average DEX price using Dexpaprika. If prediction is higher, prepare a prompt for a swap of 1 USDC to SOL using Jupiter. Then wait 60 seconds and repeat."
 
       const stream = await agent.stream({ messages: [new HumanMessage(thought)] }, config);
 

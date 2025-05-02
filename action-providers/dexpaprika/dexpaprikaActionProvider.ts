@@ -1,6 +1,6 @@
 import { ActionProvider, Network, WalletProvider, CreateAction } from "@tokenomiapro/agentkit";
 import { z } from "zod";
-import { getTopPoolsSchema, searchSchema } from "./schemas";
+import { getTopPoolsSchema, searchSchema, getTokenDetailsSchema } from "./schemas";
 
 
 
@@ -30,6 +30,22 @@ export class DexpaprikaActionProvider extends ActionProvider<WalletProvider> {
         const response = await fetch(`https://api.dexpaprika.com/networks/solana/pools?limit=5&sort=${args.sort}&order_by=${args.order_by}`)
 
         return response.json()
+    }
+
+      /**
+     * Gets detailed information about a specific token on a network.
+     *
+     * @param args - The arguments for fetching token details
+     * @returns A JSON string containing token details
+     */
+    @CreateAction({
+        name: "get_token_details",
+        description: "Get detailed information about a specific token on a network",
+        schema: getTokenDetailsSchema,
+    })
+    async getTokenDetails(args: z.infer<typeof getTokenDetailsSchema>): Promise<string> {
+        const response = await fetch(`https://api.dexpaprika.com/networks/${args.network}/tokens/${args.token_address}`);
+        return response.json();
     }
 
     supportsNetwork(network: Network): boolean {
