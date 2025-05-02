@@ -4,7 +4,7 @@ import {
   SolanaKeypairWalletProvider,
   splActionProvider,
   walletActionProvider,
-  cdpApiActionProvider,
+  jupiterActionProvider
 } from "@tokenomiapro/agentkit";
 import { getLangChainTools } from "@tokenomiapro/agentkit-langchain";
 import { HumanMessage } from "@langchain/core/messages";
@@ -73,13 +73,34 @@ async function initializeAgent() {
 
     // Initialize Wallet Provider
 
-    // TODO
+    let solanaPrivateKey = process.env.SOLANA_PRIVATE_KEY as string;
+    if (!solanaPrivateKey) {
+        console.log("No Solana account detected. Generating keys...");
+        const keypair = Keypair.generate();
+        solanaPrivateKey = bs58.encode(keypair.secretKey);
+        fs.appendFileSync(".env", `SOLANA_PRIVATE_KEY=${solanaPrivateKey}\n`);
+        console.log(`Created Solana Wallet: ${keypair.publicKey.toBase58()}`);
+    }
+
+    let walletProvider: SolanaKeypairWalletProvider;
+    const rpcUrl = process.env.SOLANA_RPC_URL
+
+    if (rpcUrl) {
+      walletProvider = await SolanaKeypairWalletProvider.fromRpcUrl(rpcUrl, solanaPrivateKey);
+    } else {
+      const network = (process.env.NETWORK_ID ?? "solana-devnet") as SOLANA_NETWORK_ID;
+      walletProvider = await SolanaKeypairWalletProvider.fromNetwork(network, solanaPrivateKey);
+    }
 
     // Initialize AgentKit
     const agentkit = await AgentKit.from({
-      cdpApiKeyName: process.env.CDP_API_KEY_NAME,
-      cdpApiKeyPrivateKey:  process.env.CDP_API_KEY_PRIVATE_KEY,
-      actionProviders: [walletActionProvider(), dexpaprikaActionProvider()]
+      walletProvider,
+      actionProviders: [
+        walletActionProvider(), 
+        dexpaprikaActionProvider(),
+        splActionProvider(),
+        jupiterActionProvider()
+      ]
     });
 
     const tools = await getLangChainTools(agentkit);
