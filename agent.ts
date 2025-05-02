@@ -17,6 +17,8 @@ import * as readline from "readline";
 import * as fs from "fs";
 import bs58 from "bs58";
 
+import { dexpaprikaActionProvider } from "./action-providers/dexpaprika";
+
 dotenv.config();
 
 /**
@@ -76,7 +78,8 @@ async function initializeAgent() {
     // Initialize AgentKit
     const agentkit = await AgentKit.from({
       cdpApiKeyName: process.env.CDP_API_KEY_NAME,
-      cdpApiKeyPrivateKey:  process.env.CDP_API_KEY_PRIVATE_KEY
+      cdpApiKeyPrivateKey:  process.env.CDP_API_KEY_PRIVATE_KEY,
+      actionProviders: [walletActionProvider(), dexpaprikaActionProvider()]
     });
 
     const tools = await getLangChainTools(agentkit);
